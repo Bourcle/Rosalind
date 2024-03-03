@@ -1,50 +1,43 @@
 #Brief introduction to graph theory
-def fastq2adj_dic(file) : 
-    dic = {}
-    adj_dic = {}
-    with open(file) as f : 
-        for line in f : 
-            line = line.strip()
-            if '>' in line : 
-                read_id = line.replace('>', '')
-                dic.setdefault(read_id, [])
-                adj_dic.setdefault(read_id, [])
-            else : 
-                dic[read_id].append(line)
-    key_list = dic.keys()
-    for i in key_list : 
-        dic[i] = ''.join(dic[i])
-        dic[i] = list(dic[i])
-        start = ''.join(dic[0:3])
-        end = ''.join(dic[-3:-1])
-        adj_dic[i].append(start)
-        adj_dic[i].append(end)
-    
-    df = pd.DataFrame(
-        adj_dic, 
-        index = ['Start', 'End']).T
+def parse_fasta(fasta):
+    sequences = []
+    current_sequence = ""
+    for line in fasta:
+        if line.startswith(">"):
+            if current_sequence:
+                sequences.append((header, current_sequence))
+            header = line.strip()[1:]
+            current_sequence = ""
+        else:
+            current_sequence += line.strip()
+    if current_sequence:
+        sequences.append((header, current_sequence))
+    return sequences
 
-    return df
+def overlap_graph(sequences, k):
+    adjacency_list = []
 
+    for i in range(len(sequences)):
+        for j in range(len(sequences)):
+            if i != j and sequences[i][1][-k:] == sequences[j][1][:k]:
+                adjacency_list.append((sequences[i][0], sequences[j][0]))
 
-def print_adj(df) : 
-    random_row = df.sample(n=3).index.to_list()
-    adj_list = []
-    for i in random_row : 
-        for j in df.columns.to_list : 
-            if df.loc[i, 'End'].values[0] == df.loc[j, 'Start'].values[0] & df.loc[i, 'End'].values[0] != df.loc[i, 'Start'].values[0] : 
-                adj_list.append(f'{i} {j}')
-            else : continue
-            
-    return adj_list
+    return adjacency_list
 
+# Read input from a file (replace 'input.fasta' with your input file)
+input_dir = '/Users/idean/Downloads/rosalind_grph (1).txt'
+with open(input_dir, 'r') as file:
+    fasta_lines = file.readlines()
 
-file = '/Users/idean/Downloads/rosalind_grph.txt'
+# Parse FASTA format
+sequences = parse_fasta(fasta_lines)
 
-df = fastq2adj_dic(file)
-adj_list = print_adj(df)
+# Generate overlap graph for k=3
+k_value = 3
+overlap_edges = overlap_graph(sequences, k_value)
 
-for i in adj_list : 
-    print(i)
+tmp_list = []
 
-
+# Print the adjacency list in the specified format
+for edge in overlap_edges:
+    print(edge[0], edge[1])
